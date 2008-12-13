@@ -4,5 +4,6 @@ buildEnv.Library('vcomp_assembler',
 	Split("""
 	Tokenizer.cpp
 	Assembler.cpp
+	LinkedList.cpp
 	"""))
 

@@ -11,11 +11,106 @@
 
 namespace VCOMP
 {
+	const int ASSEMBLER_MAX_SOURCE_LINE_LENGTH = 0x1000; // 4096 max characters
+	const int ASSEMBLER_MAX_IDENTIFIER_LENGTH = 0x80; // 128 max characters
+	
+	namespace LL { class Node; class List; }
+	
+	namespace ASSEMBLER
+	{
+		typedef struct Operand_Type
+		{
+			int operandType_;
+			union
+			{
+				int valueAsInteger_;
+				float valueAsFloat_;
+				int valueAsStringIndex_;
+				int valueAsStackIndex_;
+				int valueAsInstructionIndex_;
+				int valueAsFunctionIndex_;
+				int valueAsRegister_;
+			};
+			int offset_;
+			
+		} Operand;
+		
+		typedef struct Instruction_Type
+		{
+			int opcode_;
+			int operandCount_;
+			Operand* operands_;
+		} Instruction;
+		
+		typedef struct ExecutableHeader_Type
+		{
+			int stackSize_;
+			int globalDataSize_;
+			int autoRunFunctionIndex_;
+			int autoRunFunctionExists_;
+		} ExecutableHeader;
+		
+		typedef struct FunctionTableEntry_Type
+		{
+			int index_;
+			char name_[ASSEMBLER_MAX_IDENTIFIER_LENGTH];
+			int entryPoint_;
+			int parameterCount_;
+			int localDataSize_;
+		} FunctionTableEntry;
+		
+		typedef struct SymbolTableEntry_Type
+		{
+			int index_;
+			char name_[ASSEMBLER_MAX_IDENTIFIER_LENGTH];
+			int size_; // size of the entry is 1 for variables and > 1 for arrays
+			int stackIndex_; // stack index that the symbol points to
+			int functionIndex_; // the function that this symbol lives in
+		} SymbolTableEntry;
+		
+		typedef struct LabelTableEntry_Type
+		{
+			int index_;
+			char name_[ASSEMBLER_MAX_IDENTIFIER_LENGTH];
+			int targetIndex_; // index of target instruction
+			int functionIndex_; // the function that this label lives in
+		} LabelTableEntry;
+		
+	} // end namespace
+
 	class Assembler
 	{
 	public:
 		Assembler();
 		~Assembler();
+		
+	private:
+	
+		// string table
+		int AddString(LL::List* list, char* str);
+		
+		// function table
+		int AddFunction(char* name, int entryPoint);
+		void SetFunctionInformation(char* name, int parameterCount, int localDataSize);
+		ASSEMBLER::FunctionTableEntry* GetFunction(char* name);
+		
+		// symbol table
+		int AddSymbol(char* name, int size, int stackIndex, int functionIndex);
+		ASSEMBLER::SymbolTableEntry* GetSymbol(char* name, int functionIndex);
+		int GetIdentifierStackIndex(char* identifier, int functionIndex);
+		int GetIdentifierSize(char* identifier, int functionIndex);
+		
+		// label table
+		int AddLabel(char* name, int targetIndex, int functionIndex);
+		ASSEMBLER::LabelTableEntry* GetLabel(char* name, int functionIndex);
+	
+		unsigned int sourceSize_;
+		char** sourceCode_;
+		LL::List* stringTable_;
+		LL::List* functionTable_;
+		LL::List* symbolTable_;
+		LL::List* labelTable_;
+		
 	}; // end class
 
 } // end namespace

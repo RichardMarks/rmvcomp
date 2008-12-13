@@ -72,7 +72,7 @@ namespace VCOMP
 		
 		bool StringProcessor::IsStringInteger(char* str)
 		{
-			if (0 != str)
+			if (!str)
 			{
 				return false;
 			}
@@ -107,7 +107,7 @@ namespace VCOMP
 		
 		bool StringProcessor::IsStringFloat(char* str)
 		{
-			if (0 != str)
+			if (!str)
 			{
 				return false;
 			}
@@ -163,7 +163,7 @@ namespace VCOMP
 		
 		bool StringProcessor::IsStringWhiteSpace(char* str)
 		{
-			if (0 != str)
+			if (!str)
 			{
 				return false;
 			}
@@ -172,7 +172,7 @@ namespace VCOMP
 			
 			if (0 == strLength)
 			{
-				return false;
+				return true;
 			}
 			
 			for (unsigned int index = 0; index < strLength; index++)
@@ -188,7 +188,7 @@ namespace VCOMP
 		
 		bool StringProcessor::IsStringIdentifier(char* str)
 		{
-			if (0 != str)
+			if (!str)
 			{
 				return false;
 			}
