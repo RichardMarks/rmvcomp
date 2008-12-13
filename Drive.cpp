@@ -32,7 +32,12 @@ namespace VCOMP
 		{
 			fprintf(stderr,
 				"Cannot execute %s!\n\n"
-				"FILE PARSER UNAVAILABLE AT THIS TIME.\n");
+				"FILE PARSER UNAVAILABLE AT THIS TIME.\n", fileName);
+		}
+		else
+		{
+			fprintf(stderr,
+				"%s not found!", fileName);
 		}
 	}
 
@@ -43,16 +48,14 @@ namespace VCOMP
 		{
 			unsigned int fileID = iter->second;
 			DiskFile* file = files_->Get(fileID);
-			file->Open(DISKFILE::Read);
 			unsigned long fileSize = file->GetSize();
-			file->Close();
 			directory_.erase(fileName);
 			used_ -= fileSize;
 		}
 		else
 		{
 			fprintf(stderr,
-				"%s not found!");
+				"%s not found!", fileName);
 		}
 	}
 
@@ -68,10 +71,8 @@ namespace VCOMP
 
 	void Drive::SaveFile(DiskFile* file, const char* path)
 	{
-		file->Open(DISKFILE::Read);
 		unsigned long fileSize = file->GetSize();
-		file->Close();
-	
+
 		if (used_ + fileSize > capacity_)
 		{
 			fprintf(stderr, "Out of Disk Space while Saving %s%s\n", file->GetFileName(), path);
@@ -86,20 +87,37 @@ namespace VCOMP
 			fullPath += file->GetFileName();
 			directory_[fullPath] = fileID;
 			used_ += fileSize;
+			
+			fprintf(stderr, "Saving file #%d to %s\n", fileID, fullPath.c_str());
 		}
 		else
 		{
 			fprintf(stderr,
 				"%s exists already!\n"
-				"Cannot overwrite files!\n");
+				"Cannot overwrite files!\n", file->GetFileName());
 		}
 	}
 
 	DiskFile* Drive::OpenFile(DISKFILE::DISKFILEMODE diskFileMode, const char* fileName)
 	{
-		DiskFile* file = new DiskFile(fileName);
-		file->Open(diskFileMode);
-		return file;
+		if (DISKFILE::Write == diskFileMode)
+		{
+			DiskFile* file = new DiskFile(fileName);
+			file->Open(DISKFILE::Write);
+			return file;
+		}
+		
+		// read
+		NameTableIterator iter;
+		if ((iter = directory_.find(fileName)) != directory_.end())
+		{
+			unsigned int fileID = iter->second;
+			DiskFile* file = files_->Get(fileID);
+			file->Open(DISKFILE::Read);
+			return file;
+		}
+		
+		return 0;
 	}
 
 	void Drive::CloseFile(DiskFile* file)

@@ -36,7 +36,7 @@ namespace VCOMP
 	{ 
 		enum Register 
 		{ 
-			AX, BX, CX, DX, DS, ES 
+			AX, BX, CX, DX, DS, ES, INVALID_REGISTER
 		}; 
 		
 		typedef unsigned long RegValue; 

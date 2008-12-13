@@ -1,0 +1,8 @@
+buildEnv = Environment(CCFLAGS = '-g')
+
+buildEnv.Library('vcomp_assembler', 
+	Split("""
+	Tokenizer.cpp
+	Assembler.cpp
+	"""))
+

@@ -2,6 +2,7 @@ buildEnv = Environment(CCFLAGS = '-g')
 
 buildEnv.Program('vcomp', 
 	Split("""
+	Tokenizer.cpp
 	Hardware.cpp
 	Software.cpp
 	Device.cpp

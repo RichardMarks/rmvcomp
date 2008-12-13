@@ -27,9 +27,9 @@ namespace VCOMP
 	DiskFile::DiskFile(const char* fileName) :
 		readOnly_(false),
 		openFlag_(false),
-		data_(0),
-		fileName_(fileName)
+		data_(0)
 	{
+		fileName_ = strdup(fileName);
 	}
 
 	DiskFile::~DiskFile()
@@ -55,9 +55,12 @@ namespace VCOMP
 		if (!openFlag_)
 		{
 			openFlag_ = true; 
+			fprintf(stderr, "DiskFile::Open(%s)\n%s is now open.\n", 
+			(DISKFILE::Read == diskFileMode) ? "Read" : "Write", fileName_);
 			return;
 		}
-		fprintf(stderr, "%s is already open!\n", fileName_);
+		fprintf(stderr, "DiskFile::Open(%s)\n%s is already open!\n", 
+			(DISKFILE::Read == diskFileMode) ? "Read" : "Write", fileName_);
 	}
 
 	void DiskFile::Close()
@@ -65,10 +68,14 @@ namespace VCOMP
 		if (openFlag_)
 		{
 			openFlag_ = false; 
-			Flush(); // make sure the data gets written
+			if (!readOnly_)
+			{
+				Flush(); // make sure the data gets written
+			}
+			fprintf(stderr, "DiskFile::Close()\n%s closed.\n", fileName_);
 			return;
 		}
-		fprintf(stderr, "%s is not open!\n", fileName_);
+		fprintf(stderr, "DiskFile::Close()\n%s is not open!\n", fileName_);
 	}
 
 	void DiskFile::Write(const char* data)
@@ -82,13 +89,21 @@ namespace VCOMP
 			}
 		
 			unsigned long dataLength = strlen(data);
+			
+			fprintf(stderr, "DiskFile::Write(%s)\n\tdataLength = %d\n", data, dataLength);
+			
 			for (unsigned long b = 0; b < dataLength; b++)
 			{
 				dataCache_.push_back(static_cast<unsigned char>(data[b]));
+				
+				fprintf(stderr, "%02X ", static_cast<unsigned char>(data[b]));
 			}
+			
+			fprintf(stderr, "\n");
+			
 			return;
 		}
-		fprintf(stderr, "%s is not open!\n", fileName_);
+		fprintf(stderr, "DiskFile::Write(%s)\n%s is not open!\n", fileName_);
 	}
 
 	MemoryChunk* DiskFile::Read()
@@ -98,6 +113,11 @@ namespace VCOMP
 			if (readOnly_)
 			{
 				return data_;
+			}
+			else
+			{
+				fprintf(stderr, "%s is not open for reading!\n", fileName_);
+				return 0;
 			}
 		}
 		fprintf(stderr, "%s is not open!\n", fileName_);
@@ -111,15 +131,10 @@ namespace VCOMP
 
 	unsigned long DiskFile::GetSize()
 	{
-		if (openFlag_ && readOnly_)
+		if (0 != data_)
 		{
-			if (0 != data_)
-			{
-				return data_->GetSize();
-			}
-			return 0;
+			return data_->GetSize();
 		}
-		fprintf(stderr, "%s is not open!\n", fileName_);
 		return 0;
 	}
 
@@ -132,6 +147,7 @@ namespace VCOMP
 			data_ = 0;
 		}
 		data_ = new MemoryChunk(dataLength);
+		fprintf(stderr, "Flushing %d bytes of data\n", dataLength);
 		for (unsigned long b = 0; b < dataLength; b++)
 		{
 			data_->Write(dataCache_[b]);
