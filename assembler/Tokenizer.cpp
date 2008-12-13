@@ -6,9 +6,12 @@
 // Author: Richard Marks
 // Purpose: a class that implements a simple string tokenizer and support parsing functions
 
-#include "Tokenizer.h"
-
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
 #include <cctype>
+
+#include "Tokenizer.h"
 
 namespace VCOMP
 {
@@ -215,6 +218,26 @@ namespace VCOMP
 			}
 			
 			return true;
+		}
+		
+		char* StringProcessor::UCase(char* str)
+		{
+			char* iter;
+			for (iter = str; *iter; ++iter)
+			{
+				*iter = toupper(*iter);
+			}
+			return str;
+		}
+		
+		char* StringProcessor::LCase(char* str)
+		{
+			char* iter;
+			for (iter = str; *iter; ++iter)
+			{
+				*iter = tolower(*iter);
+			}
+			return str;
 		}
 		
 	} // end namespace

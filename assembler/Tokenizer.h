@@ -43,6 +43,8 @@ namespace VCOMP
 			static bool IsStringWhiteSpace(char* str);
 			static bool IsStringIdentifier(char* str);
 			
+			static char* UCase(char* str);
+			static char* LCase(char* str);
 		private:
 			StringProcessor();
 		};

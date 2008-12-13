@@ -11,6 +11,7 @@
 #include <cstring>
 
 #include "Assembler.h"
+#include "Tokenizer.h"
 
 #include "LinkedList.h"
 
@@ -22,15 +23,73 @@ namespace VCOMP
 	{
 		stringTable_ = new LL::List;
 		functionTable_ = new LL::List;
+		instructionTable_ = new ASSEMBLER::InstructionTable [ASSEMBLER_MAX_INSTRUCTIONS];
+		
+		
+		
+		// define instruction set
+		int index = 0;
+		int opcode = 0;
+
+		// memory
+		index = AddInstruction("mov", opcode++, 2);
+		SetOperandType(index, 0, ASSEMBLER::OpFlag_Register | ASSEMBLER::OpFlag_Memory | ASSEMBLER::OpFlag_String | ASSEMBLER::OpFlag_Float | ASSEMBLER::OpFlag_Integer);
+		SetOperandType(index, 1, ASSEMBLER::OpFlag_Register | ASSEMBLER::OpFlag_Memory);
+		
+		// math
+		index = AddInstruction("add", opcode++, 2);
+		index = AddInstruction("sub", opcode++, 2);
+		index = AddInstruction("mul", opcode++, 2);
+		index = AddInstruction("div", opcode++, 2);
+		index = AddInstruction("mod", opcode++, 2);
+		index = AddInstruction("exp", opcode++, 2);
+		index = AddInstruction("neg", opcode++, 1);
+		index = AddInstruction("inc", opcode++, 1);
+		index = AddInstruction("dec", opcode++, 1);
+		
+		// bit operations
+		index = AddInstruction("and", opcode++, 2);
+		index = AddInstruction("or", opcode++, 2);
+		index = AddInstruction("xor", opcode++, 2);
+		index = AddInstruction("not", opcode++, 1);
+		index = AddInstruction("shl", opcode++, 2);
+		index = AddInstruction("shr", opcode++, 2);
+		
+		// string processing
+		index = AddInstruction("cat", opcode++, 2);
+		index = AddInstruction("gch", opcode++, 3);
+		index = AddInstruction("sch", opcode++, 3);
+		
+		// logic
+		index = AddInstruction("jmp", opcode++, 1);
+		index = AddInstruction("je", opcode++, 3);
+		index = AddInstruction("jne", opcode++, 3);
+		index = AddInstruction("jg", opcode++, 3);
+		index = AddInstruction("jl", opcode++, 3);
+		index = AddInstruction("jge", opcode++, 3);
+		index = AddInstruction("jle", opcode++, 3);
+		
+		// stack manipulation
+		index = AddInstruction("push", opcode++, 1);
+		index = AddInstruction("pop", opcode++, 1);
+		
+		// function calls
+		index = AddInstruction("call", opcode++, 1);
+		index = AddInstruction("ret", opcode++, 0);
+		
+		// misc
+		index = AddInstruction("pause", opcode++, 1);
+		index = AddInstruction("exit", opcode++, 1);
 	}
 	
 	Assembler::~Assembler()
 	{
 		delete stringTable_;
 		delete functionTable_;
+		delete [] instructionTable_;
 	}
 	
-	int Assembler::AddString(LL::List* list, char* str)
+	int Assembler::AddString(LL::List* list, const char* str)
 	{
 		LL::Node* node = list->head_;
 		
@@ -48,7 +107,7 @@ namespace VCOMP
 		return list->Add(strNode);
 	}
 	
-	int Assembler::AddFunction(char* name, int entryPoint)
+	int Assembler::AddFunction(const char* name, int entryPoint)
 	{
 		if (GetFunction(name))
 		{
@@ -65,14 +124,14 @@ namespace VCOMP
 		return index;
 	}
 	
-	void Assembler::SetFunctionInformation(char* name, int parameterCount, int localDataSize)
+	void Assembler::SetFunctionInformation(const char* name, int parameterCount, int localDataSize)
 	{
 		ASSEMBLER::FunctionTableEntry* node = GetFunction(name);
 		node->parameterCount_ = parameterCount;
 		node->localDataSize_ = localDataSize;
 	}
 	
-	ASSEMBLER::FunctionTableEntry* Assembler::GetFunction(char* name)
+	ASSEMBLER::FunctionTableEntry* Assembler::GetFunction(const char* name)
 	{
 		// if the function table is empty, return 0
 		if (!functionTable_->nodeCount_)
@@ -96,7 +155,7 @@ namespace VCOMP
 		return 0;
 	}
 	
-	int Assembler::AddSymbol(char* name, int size, int stackIndex, int functionIndex)
+	int Assembler::AddSymbol(const char* name, int size, int stackIndex, int functionIndex)
 	{
 		if (GetSymbol(name, functionIndex))
 		{
@@ -114,7 +173,7 @@ namespace VCOMP
 		return index;
 	}
 	
-	ASSEMBLER::SymbolTableEntry* Assembler::GetSymbol(char* name, int functionIndex)
+	ASSEMBLER::SymbolTableEntry* Assembler::GetSymbol(const char* name, int functionIndex)
 	{
 		if (!symbolTable_->nodeCount_)
 		{
@@ -141,19 +200,19 @@ namespace VCOMP
 		return 0;
 	}
 	
-	int Assembler::GetIdentifierStackIndex(char* identifier, int functionIndex)
+	int Assembler::GetIdentifierStackIndex(const char* identifier, int functionIndex)
 	{
 		ASSEMBLER::SymbolTableEntry* node = GetSymbol(identifier, functionIndex);
 		return node->stackIndex_;
 	}
 	
-	int Assembler::GetIdentifierSize(char* identifier, int functionIndex)
+	int Assembler::GetIdentifierSize(const char* identifier, int functionIndex)
 	{
 		ASSEMBLER::SymbolTableEntry* node = GetSymbol(identifier, functionIndex);
 		return node->size_;
 	}
 	
-	int Assembler::AddLabel(char* name, int targetIndex, int functionIndex)
+	int Assembler::AddLabel(const char* name, int targetIndex, int functionIndex)
 	{
 		if (GetLabel(name, functionIndex))
 		{
@@ -170,7 +229,7 @@ namespace VCOMP
 		return index;
 	}
 	
-	ASSEMBLER::LabelTableEntry* Assembler::GetLabel(char* name, int functionIndex)
+	ASSEMBLER::LabelTableEntry* Assembler::GetLabel(const char* name, int functionIndex)
 	{
 		if (!labelTable_->nodeCount_)
 		{
@@ -195,6 +254,33 @@ namespace VCOMP
 		}
 		
 		return 0;
+	}
+	
+	int Assembler::AddInstruction(const char* mnemonic, int opcode, int operandCount)
+	{
+		static unsigned int nextInstructionIndex = 0;
+		if (nextInstructionIndex >= ASSEMBLER_MAX_INSTRUCTIONS)
+		{
+			// cannot add anymore!
+			return -1;
+		}
+		
+		strcpy(instructionTable_[nextInstructionIndex].mnemonic_, mnemonic);
+		
+		PARSING::StringProcessor::UCase(instructionTable_[nextInstructionIndex].mnemonic_);
+		
+		//strupr(instructionTable_[nextInstructionIndex].mnemonic_);
+		
+		instructionTable_[nextInstructionIndex].opcode_ = opcode;
+		instructionTable_[nextInstructionIndex].operandCount_ = operandCount;
+		instructionTable_[nextInstructionIndex].operandList_ = (ASSEMBLER::ByteX4*)malloc(operandCount * sizeof(ASSEMBLER::ByteX4));
+		nextInstructionIndex++;
+		return nextInstructionIndex - 1;
+	}
+	
+	void Assembler::SetOperandType(int instructionIndex, int operandIndex, ASSEMBLER::ByteX4 operandType)
+	{
+		instructionTable_[instructionIndex].operandList_[operandIndex] = operandType;
 	}
 	
 } // end namespace

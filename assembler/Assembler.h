@@ -13,6 +13,8 @@ namespace VCOMP
 {
 	const int ASSEMBLER_MAX_SOURCE_LINE_LENGTH = 0x1000; // 4096 max characters
 	const int ASSEMBLER_MAX_IDENTIFIER_LENGTH = 0x80; // 128 max characters
+	const int ASSEMBLER_MAX_MNEMONIC_LENGTH = 0xA; // 10 max characters
+	const int ASSEMBLER_MAX_INSTRUCTIONS = 0x100; // 256 max instructions
 	
 	namespace LL { class Node; class List; }
 	
@@ -76,6 +78,26 @@ namespace VCOMP
 			int functionIndex_; // the function that this label lives in
 		} LabelTableEntry;
 		
+		typedef unsigned int ByteX4;
+		typedef struct InstructionTable_Type
+		{
+			char mnemonic_[ASSEMBLER_MAX_MNEMONIC_LENGTH];
+			int opcode_;
+			int operandCount_;
+			ByteX4* operandList_;
+		} InstructionTable;
+		
+		enum OperandBitMask
+		{
+			OpFlag_Integer 		= 0x1,
+			OpFlag_Float 		= 0x2,
+			OpFlag_String 		= 0x4,
+			OpFlag_Memory 		= 0x8,
+			OpFlag_Label 		= 0x10,
+			OpFlag_Function 	= 0x20,
+			OpFlag_Register 	= 0x40
+		};
+		
 	} // end namespace
 
 	class Assembler
@@ -87,29 +109,35 @@ namespace VCOMP
 	private:
 	
 		// string table
-		int AddString(LL::List* list, char* str);
+		int AddString(LL::List* list, const char* str);
 		
 		// function table
-		int AddFunction(char* name, int entryPoint);
-		void SetFunctionInformation(char* name, int parameterCount, int localDataSize);
-		ASSEMBLER::FunctionTableEntry* GetFunction(char* name);
+		int AddFunction(const char* name, int entryPoint);
+		void SetFunctionInformation(const char* name, int parameterCount, int localDataSize);
+		ASSEMBLER::FunctionTableEntry* GetFunction(const char* name);
 		
 		// symbol table
-		int AddSymbol(char* name, int size, int stackIndex, int functionIndex);
-		ASSEMBLER::SymbolTableEntry* GetSymbol(char* name, int functionIndex);
-		int GetIdentifierStackIndex(char* identifier, int functionIndex);
-		int GetIdentifierSize(char* identifier, int functionIndex);
+		int AddSymbol(const char* name, int size, int stackIndex, int functionIndex);
+		ASSEMBLER::SymbolTableEntry* GetSymbol(const char* name, int functionIndex);
+		int GetIdentifierStackIndex(const char* identifier, int functionIndex);
+		int GetIdentifierSize(const char* identifier, int functionIndex);
 		
 		// label table
-		int AddLabel(char* name, int targetIndex, int functionIndex);
-		ASSEMBLER::LabelTableEntry* GetLabel(char* name, int functionIndex);
-	
+		int AddLabel(const char* name, int targetIndex, int functionIndex);
+		ASSEMBLER::LabelTableEntry* GetLabel(const char* name, int functionIndex);
+		
+		// instruction table
+		int AddInstruction(const char* mnemonic, int opcode, int operandCount);
+		void SetOperandType(int instructionIndex, int operandIndex, ASSEMBLER::ByteX4 operandType);
+		
 		unsigned int sourceSize_;
 		char** sourceCode_;
 		LL::List* stringTable_;
 		LL::List* functionTable_;
 		LL::List* symbolTable_;
 		LL::List* labelTable_;
+		
+		ASSEMBLER::InstructionTable* instructionTable_;
 		
 	}; // end class
 
